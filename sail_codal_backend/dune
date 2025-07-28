@@ -1,0 +1,6 @@
+(library
+ (name sail_codal_backend)
+ (public_name sail.codal_backend)
+ (libraries sail jib_util jib_compile type_check ast_util)
+ (modules codal_backend sail_plugin_codal)
+) 
