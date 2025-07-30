@@ -7,38 +7,45 @@ open Type_check
 open Reporting
 
 (* Codal backend configuration *)
-let codal_options = []
-
-let codal_rewrites = []
-
 (* Context for Codal compilation *)
-type codal_ctx = {
-  target_name : string;
-  locals : (mut * ctyp) NameMap.t;
-  registers : ctyp Bindings.t;
-  tc_env : Env.t;
-  effect_info : Effects.side_effect_info;
-  no_raw : bool;
-  no_static : bool;
-}
-
 (* Initialize Codal context *)
-let init_codal_ctx target_name ast =
-  let tc_env = Env.add_typquant (Id_aux (Id "unit", Parse_ast.Unknown)) 
-    (TypQ_aux (TypQ_no_forall, Parse_ast.Unknown)) ast.env in
-  {
-    target_name;
-    locals = NameMap.empty;
-    registers = Bindings.empty;
-    tc_env;
-    effect_info = ast.effect_info;
-    no_raw = false;
-    no_static = false;
-  }
+
+(**************************************************************************)
+(* NO 2. Converting sail types to C types   - Only moduleC       LLIne:86                           *)
+(**************************************************************************)
+
+
+  module C_config (Opts : sig
+    (*We need module C_config type conding*)
+    (*Its main job is to define how 
+    Sail types map to C types in the JIB compiler backend.*)
+
+
+(**************************************************************************)
+(* NO 3. Optimization of primitives and literals   line.294                          *)
+(**************************************************************************)
+
+(**************************************************************************)
+(* NO 5. Optimizations       lINE:634                                               *)
+(**************************************************************************)
+
+(**************************************************************************)
+(* 6. Code generation     LINE:920                                                *)
+(**************************************************************************)
+
+(* Line:993
+-sgen_id
+-sgen_uid
+-sgen_name 
+-codegen_id depends sgen_id 
+-sgen_function_id 
+-sgen_function_uid depends sgen_uid 
+-codegen_function_id  depends sgen_function_id 
+*)
 
 (* Convert Jib Types to Codal Types *)
 (*There exists 25 types in Jib*)
-let rec codal_type_of_ctyp = function
+let rec sgen_ctyp = function (*depends sgen_id,sgen_ctyp*)
 | CT_unit -> 
 | CT_bit -> 
 | CT_bool -> 
@@ -65,10 +72,10 @@ let rec codal_type_of_ctyp = function
 | CT_memory_writes ->
 | CT_poly _ -> 
 (*We have sgen_ctype_name,Used in generated function names, helper macros, and type-based dispatch where the type is part of a name (no *, no C keywords).*)
-(*no sgen_const_ctype**)
-(*no sgen_mask*)
+(*-sgen_const_ctype dep sgen_ctype**)
+(*-sgen_mask*)
 
-let sgen_value = function
+let sgen_value = function (*dep sgen_id*)
 | VL_bits [] -> 
 | VL_bits bs -> 
 | VL_int i ->
@@ -84,280 +91,339 @@ let sgen_value = function
 | VL_ref r -> 
 | VL_undefined -> 
 
+(*-sgen_tuple_id dep sgen_id*)
+(*sgen_cval are value constructors dep sgen_name,sgen_id,sgen_value,sgen_call,sgen_cval,sgen_tuple_id,sgen_uid*)
+let rec sgen_cval = function
+| V_id (id, _) -> 
+| V_member (id, _) -> 
+| V_lit (vl, _) -> 
+| V_call (op, cvals) -> 
+| V_field (f, field, _) -> 
+| V_tuple_member (f, _, n) -> 
+| V_ctor_kind (f, ctor) -> 
+| V_struct (fields, _) ->
+| V_ctor_unwrap (f, ctor, _) -> 
+| V_tuple _ -> 
+
+(*These are operator arithmetic, logical, it prints in C format in c bakcned**)
+and sgen_call op cvals = (*sgen_cval, cval_ctyp*)
+     match (op, cvals) with
+    | Bnot, [v] -> 
+    | Band, vs ->
+    | Bor, vs -> 
+    | List_hd, [v] -> 
+    | List_tl, [v] ->
+    | List_is_empty, [v] -> 
+    | Eq, [v1; v2] -> begin
+    | Neq, [v1; v2] -> begin
+    | Ilt, [v1; v2] -> 
+    | Igt, [v1; v2] -> 
+    | Ilteq, [v1; v2] -> 
+    | Igteq, [v1; v2] -> 
+    | Iadd, [v1; v2] -> 
+    | Isub, [v1; v2] -> 
+    | Unsigned 64, [vec] -> 
+    | Signed 64, [vec] ->
+    | Bvand, [v1; v2] -> begin
+    | Bvnot, [v] -> begin
+    | Bvor, [v1; v2] -> begin
+    | Bvxor, [v1; v2] -> begin
+    | Bvadd, [v1; v2] -> begin
+    | Bvsub, [v1; v2] -> begin
+    | Bvaccess, [vec; n] -> begin
+    | Slice len, [vec; start] -> begin
+    | Sslice 64, [vec; start; len] -> begin
+    | Set_slice, [vec; start; slice] -> begin
+    | Zero_extend n, [v] -> begin
+    | Sign_extend n, [v] -> begin
+    | Replicate n, [v] -> begin
+    | Concat, [v1; v2] -> begin
+    | Get_abstract, [v] -> 
+    | Ite, [i; t; e] -> 
+    | String_eq, [s1; s2] -> 
+    | _, _ -> 
+    
+
+(*generating the parameter string for function calls, depending on the compile-time type of the value *)
+      let sgen_cval_param cval = (*depends sgen_cval*)
+        | CT_lbits -> 
+        | CT_sbits _ -> 
+        | CT_fbits len -> 
+        | _ ->
+(* C backend l-expression (l-value) generator — it translates jib clexp patterns into the C code that points to or dereferences the right variable or struct field.*)
+      let rec sgen_clexp l = function (*sgen_name,sgen_clexp,sgen_id,sgen_tuple_id*)
+        | CL_id (Have_exception _, _) -> 
+        | CL_id (Current_exception _, _) ->
+        | CL_id (Throw_location _, _) ->
+        | CL_id (Memory_writes _, _) -> 
+        | CL_id (Channel _, _) -> 
+        | CL_id (Return _, _) -> 
+        | CL_id (name, _) -> 
+        | CL_field (clexp, field, _) -> 
+        | CL_tuple (clexp, n) -> 
+        | CL_addr clexp ->
+        | CL_void _ -> 
+        | CL_rmw _ ->
+(*It generates the C expression corresponding to a left expression (clexp), but as a value, not as a pointer.*)
+      let rec sgen_clexp_pure l = function
+        | CL_id (Have_exception _, _) -> 
+        | CL_id (Current_exception _, _) -> 
+        | CL_id (Throw_location _, _) -> 
+        | CL_id (Memory_writes _, _) -> 
+        | CL_id (Channel _, _) -> 
+        | CL_id (Return _, _) -> 
+        | CL_id (name, _) -> 
+        | CL_field (clexp, field, _) -> 
+        | CL_tuple (clexp, n) -> 
+        | CL_addr clexp -> 
+        | CL_void _ -> 
+        | CL_rmw _ -> 
+      (** Generate instructions to copy from a cval to a clexp. This will insert any needed type conversions from big
+          integers to small integers (or vice versa), or from arbitrary-length bitvectors to and from uint64 bitvectors as
+          needed. *)
+
+    (*Generates C code to copy a value (cval) into a location (clexp).
+
+Handles type conversions if the source and target types differ (e.g., big integer ↔ small integer, variable-length vector ↔ fixed 64-bit vector, tuple types, etc.).*)
+      let rec codegen_conversion l ctx clexp cval = (*depends is_stack_ctyp,sgen_clexp_,sgen_clexp_pure,clexp,sgen_cval*)
+        (* When both types are equal, we don't need any conversion. *)
+        | _, _ when ctyp_equal ctyp_to ctyp_from -> (*dep sgne_ctype_name*)
+        | CT_ref _, _ -> c
+        | ( (CT_vector ctyp_elem_to | CT_fvector (_, ctyp_elem_to)),
+            (CT_vector ctyp_elem_from | CT_fvector (_, ctyp_elem_from)) ) -> (*dep ngensym,sail_kill*)
+        (*vector to vector conversion up*)
+        (* If we have to convert between tuple types, convert the fields individually. *)
+        | CT_tup ctyps_to, CT_tup ctyps_from when List.length ctyps_to = List.length ctyps_from ->
+        (* For anything not special cased, just try to call a appropriate CONVERT_OF function. *)
+        | _, _ when is_stack_ctyp ctx (clexp_ctyp clexp) ->
+            (*sail_convert_of*)
+        | _, _ ->
+(*codegen_conversion;Correct type-safe assignment in generated C code.,Calls appropriate create/copy/kill helpers for heap-managed types.
+Recursively handles nested structures (vectors, tuples).*)
+    
+(*-squash_empty
+-sq_separate_map*)
 
 
-(* Generate Codal value *)
-let rec codal_value_of_cval = function
-  | V_id (id, ctyp) -> 
-      codal_type_of_ctyp ctyp ^ " " ^ string_of_name id
-  | V_lit (vl, ctyp) -> 
-      codal_literal_of_value vl ctyp
-  | V_call (op, cvals) -> 
-      codal_operation op cvals
-  | V_tuple cvals -> 
-      "(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | V_struct (fields, ctyp) -> 
-      "{" ^ String.concat ", " (List.map (fun (id, cval) -> 
-        "." ^ string_of_id id ^ " = " ^ codal_value_of_cval cval) fields) ^ "}"
-  | V_field (cval, id, ctyp) -> 
-      codal_value_of_cval cval ^ "." ^ string_of_id id
-  | V_ctor_kind (cval, (id, ctyps)) -> 
-      codal_value_of_cval cval ^ ".kind == " ^ string_of_id id
-  | V_ctor_unwrap (cval, (id, ctyps), ctyp) -> 
-      codal_value_of_cval cval ^ "." ^ string_of_id id ^ "_value"
-  | V_tuple_member (cval, i, n) -> 
-      codal_value_of_cval cval ^ ".f" ^ string_of_int i
-  | V_member (id, ctyp) -> 
-      string_of_id id
-  | V_ref (id, ctyp) -> 
-      "&" ^ string_of_id id
+let rec codegen_instr fid ctx (I_aux (instr, (_, l))) =
+    match instr with
+    | I_decl (ctyp, id) when is_stack_ctyp ctx ctyp -> ksprintf string "  %s %s;" (sgen_ctyp ctyp) (sgen_name id)
+    | I_decl (ctyp, id) ->
+        ksprintf string "  %s %s;" (sgen_ctyp ctyp) (sgen_name id)
+        ^^ hardline
+        ^^ sail_create ~prefix:"  " ~suffix:";" (sgen_ctyp_name ctyp) "&%s" (sgen_name id)
+    | I_copy (clexp, cval) -> codegen_conversion l ctx clexp cval
+    | I_jump (cval, label) -> ksprintf string "  if (%s) goto %s;" (sgen_cval cval) label
+    | I_if (cval, [], else_instrs) -> codegen_instr fid ctx (iif l (V_call (Bnot, [cval])) else_instrs [])
+    | I_if (cval, [then_instr], []) ->
+        ksprintf string "  if (%s)" (sgen_cval cval)
+        ^^ space
+        ^^ surround 2 0 lbrace (codegen_instr fid ctx then_instr) (twice space ^^ rbrace)
+    | I_if (cval, then_instrs, []) ->
+        string "  if" ^^ space
+        ^^ parens (string (sgen_cval cval))
+        ^^ space
+        ^^ surround 2 0 lbrace (separate_map hardline (codegen_instr fid ctx) then_instrs) (twice space ^^ rbrace)
+    | I_if (cval, then_instrs, else_instrs) ->
+        let rec codegen_if cval then_instrs else_instrs =
+          match else_instrs with
+          | [I_aux (I_if (else_i, else_t, else_e), _)] ->
+              string "if" ^^ space
+              ^^ parens (string (sgen_cval cval))
+              ^^ space
+              ^^ surround 2 0 lbrace
+                   (sq_separate_map hardline (codegen_instr fid ctx) then_instrs)
+                   (twice space ^^ rbrace)
+              ^^ space ^^ string "else" ^^ space ^^ codegen_if else_i else_t else_e
+          | _ ->
+              string "if" ^^ space
+              ^^ parens (string (sgen_cval cval))
+              ^^ space
+              ^^ surround 2 0 lbrace
+                   (sq_separate_map hardline (codegen_instr fid ctx) then_instrs)
+                   (twice space ^^ rbrace)
+              ^^ space ^^ string "else" ^^ space
+              ^^ surround 2 0 lbrace
+                   (sq_separate_map hardline (codegen_instr fid ctx) else_instrs)
+                   (twice space ^^ rbrace)
+        in
+        twice space ^^ codegen_if cval then_instrs else_instrs
+    | I_block instrs ->
+        string "  {" ^^ jump 2 2 (sq_separate_map hardline (codegen_instr fid ctx) instrs) ^^ hardline ^^ string "  }"
+    | I_try_block instrs ->
+        string "  { /* try */"
+        ^^ jump 2 2 (sq_separate_map hardline (codegen_instr fid ctx) instrs)
+        ^^ hardline ^^ string "  }"
+    | I_funcall (x, special_extern, f, args) ->
+        let x =
+          match x with
+          | CR_one x -> x
+          | CR_multi _ -> Reporting.unreachable l __POS__ "Multiple returns should not exist in C backend"
+        in
+        let c_args = Util.string_of_list ", " sgen_cval args in
+        let ctyp = clexp_ctyp x in
+        let is_extern = ctx_is_extern (fst f) ctx || special_extern in
+        let fname =
+          if special_extern then string_of_id (fst f)
+          else if ctx_is_extern (fst f) ctx then ctx_get_extern (fst f) ctx
+          else sgen_function_uid f
+        in
+        let fname =
+          match (fname, ctyp) with
+          | "internal_pick", _ -> sprintf "pick_%s" (sgen_ctyp_name ctyp)
+          | "sail_cons", _ -> begin
+              match Option.map cval_ctyp (List.nth_opt args 0) with
+              | Some ctyp -> Util.zencode_string ("cons#" ^ string_of_ctyp (ctyp_suprema ctyp))
+              | None -> c_error "cons without specified type"
+            end
+          | "eq_anything", _ -> begin
+              match args with
+              | cval :: _ -> sprintf "eq_%s" (sgen_ctyp_name (cval_ctyp cval))
+              | _ -> c_error "eq_anything function with bad arity."
+            end
+          | "length", _ -> begin
+              match args with
+              | cval :: _ -> sprintf "length_%s" (sgen_ctyp_name (cval_ctyp cval))
+              | _ -> c_error "length function with bad arity."
+            end
+          | "vector_access", CT_bit -> "bitvector_access"
+          | "vector_access_inc", CT_bit -> "bitvector_access_inc"
+          | "vector_access", _ -> begin
+              match args with
+              | cval :: _ -> sprintf "vector_access_%s" (sgen_ctyp_name (cval_ctyp cval))
+              | _ -> c_error "vector access function with bad arity."
+            end
+          | "vector_init", _ -> sprintf "vector_init_%s" (sgen_ctyp_name ctyp)
+          | "vector_update_subrange", _ -> sprintf "vector_update_subrange_%s" (sgen_ctyp_name ctyp)
+          | "vector_update_subrange_inc", _ -> sprintf "vector_update_subrange_inc_%s" (sgen_ctyp_name ctyp)
+          | "vector_subrange", _ -> sprintf "vector_subrange_%s" (sgen_ctyp_name ctyp)
+          | "vector_subrange_inc", _ -> sprintf "vector_subrange_inc_%s" (sgen_ctyp_name ctyp)
+          | "vector_update", CT_fbits _ -> "update_fbits"
+          | "vector_update", CT_lbits -> "update_lbits"
+          | "vector_update", _ -> sprintf "vector_update_%s" (sgen_ctyp_name ctyp)
+          | "vector_update_inc", CT_fbits _ -> "update_fbits_inc"
+          | "vector_update_inc", CT_lbits -> "update_lbits_inc"
+          | "string_of_bits", _ -> begin
+              match cval_ctyp (List.nth args 0) with
+              | CT_fbits _ -> "string_of_fbits"
+              | CT_lbits -> "string_of_lbits"
+              | _ -> assert false
+            end
+          | "decimal_string_of_bits", _ -> begin
+              match cval_ctyp (List.nth args 0) with
+              | CT_fbits _ -> "decimal_string_of_fbits"
+              | CT_lbits -> "decimal_string_of_lbits"
+              | _ -> assert false
+            end
+          | "internal_vector_update", _ -> sprintf "internal_vector_update_%s" (sgen_ctyp_name ctyp)
+          | "internal_vector_init", _ -> sprintf "internal_vector_init_%s" (sgen_ctyp_name ctyp)
+          | "undefined_bitvector", CT_fbits _ -> "UNDEFINED(fbits)"
+          | "undefined_bitvector", CT_lbits -> "UNDEFINED(lbits)"
+          | "undefined_bit", _ -> "UNDEFINED(fbits)"
+          | "undefined_vector", _ -> sprintf "UNDEFINED(vector_%s)" (sgen_ctyp_name ctyp)
+          | "undefined_list", _ -> sprintf "UNDEFINED(%s)" (sgen_ctyp_name ctyp)
+          | fname, _ -> fname
+        in
+        if fname = "reg_deref" then
+          if is_stack_ctyp ctx ctyp then ksprintf string "  %s = *(%s);" (sgen_clexp_pure l x) c_args
+          else sail_copy ~prefix:"  " ~suffix:";" (sgen_ctyp_name ctyp) "&%s, *(%s)" (sgen_clexp_pure l x) c_args
+        else if is_stack_ctyp ctx ctyp then
+          string (Printf.sprintf "  %s = %s(%s%s);" (sgen_clexp_pure l x) fname (extra_arguments is_extern) c_args)
+        else string (Printf.sprintf "  %s(%s%s, %s);" fname (extra_arguments is_extern) (sgen_clexp l x) c_args)
+    | I_clear (ctyp, _) when is_stack_ctyp ctx ctyp -> empty
+    | I_clear (ctyp, id) -> sail_kill ~prefix:"  " ~suffix:";" (sgen_ctyp_name ctyp) "&%s" (sgen_name id)
+    | I_init (ctyp, id, init) -> (
+        match init with
+        | Init_cval cval ->
+            codegen_instr fid ctx (idecl l ctyp id) ^^ hardline ^^ codegen_conversion l ctx (CL_id (id, ctyp)) cval
+        | Init_static VL_undefined -> ksprintf string "  static %s %s;" (sgen_ctyp ctyp) (sgen_name id)
+        | Init_static vl -> ksprintf string "  static %s %s = %s;" (sgen_ctyp ctyp) (sgen_name id) (sgen_value vl)
+        | Init_json_key parts ->
+            ksprintf string "  sail_config_key %s = {%s};" (sgen_name id)
+              (Util.string_of_list ", " (fun part -> "\"" ^ part ^ "\"") parts)
+      )
+    | I_reinit (ctyp, id, cval) ->
+        codegen_instr fid ctx (ireset l ctyp id) ^^ hardline ^^ codegen_conversion l ctx (CL_id (id, ctyp)) cval
+    | I_reset (ctyp, id) when is_stack_ctyp ctx ctyp ->
+        string (Printf.sprintf "  %s %s;" (sgen_ctyp ctyp) (sgen_name id))
+    | I_reset (ctyp, id) -> sail_recreate ~prefix:"  " ~suffix:";" (sgen_ctyp_name ctyp) "&%s" (sgen_name id)
+    | I_return cval -> twice space ^^ c_return (string (sgen_cval cval))
+    | I_throw _ -> c_error ~loc:l "I_throw reached code generator"
+    | I_undefined ctyp ->
+        let rec codegen_exn_return ctyp =
+          match ctyp with
+          | CT_unit -> ("UNIT", [])
+          | CT_bit -> ("UINT64_C(0)", [])
+          | CT_fint _ -> ("INT64_C(0xdeadc0de)", [])
+          | CT_lint when !optimize_fixed_int -> ("((sail_int) 0xdeadc0de)", [])
+          | CT_fbits _ -> ("UINT64_C(0xdeadc0de)", [])
+          | CT_sbits _ -> ("undefined_sbits()", [])
+          | CT_lbits when !optimize_fixed_bits -> ("undefined_lbits(false)", [])
+          | CT_bool -> ("false", [])
+          | CT_enum _ -> (sprintf "((%s)0)" (sgen_ctyp ctyp), [])
+          | CT_tup ctyps when is_stack_ctyp ctx ctyp ->
+              let gs = ngensym () in
+              let fold (n, ctyp) (inits, prev) =
+                let init, prev' = codegen_exn_return ctyp in
+                (sprintf ".%s = %s" (sgen_tuple_id n) init :: inits, prev @ prev')
+              in
+              let inits, prev = List.fold_right fold (List.mapi (fun i x -> (i, x)) ctyps) ([], []) in
+              ( sgen_name gs,
+                [
+                  sprintf "struct %s %s = { " (sgen_ctyp_name ctyp) (sgen_name gs)
+                  ^ Util.string_of_list ", " (fun x -> x) inits
+                  ^ " };";
+                ]
+                @ prev
+              )
+          | CT_struct _ when is_stack_ctyp ctx ctyp ->
+              let fields = struct_field_bindings l ctx ctyp |> snd |> Bindings.bindings in
+              let gs = ngensym () in
+              let fold (id, ctyp) (inits, prev) =
+                let init, prev' = codegen_exn_return ctyp in
+                (sprintf ".%s = %s" (sgen_id id) init :: inits, prev @ prev')
+              in
+              let inits, prev = List.fold_right fold fields ([], []) in
+              ( sgen_name gs,
+                [
+                  sprintf "struct %s %s = { " (sgen_ctyp_name ctyp) (sgen_name gs)
+                  ^ Util.string_of_list ", " (fun x -> x) inits
+                  ^ " };";
+                ]
+                @ prev
+              )
+          | CT_ref _ -> ("NULL", [])
+          | ctyp -> c_error ("Cannot create undefined value for type: " ^ string_of_ctyp ctyp)
+        in
+        let ret, prev = codegen_exn_return ctyp in
+        separate_map hardline (fun str -> string ("  " ^ str)) (List.rev prev)
+        ^^ hardline
+        ^^ string (Printf.sprintf "  return %s;" ret)
+    | I_comment str -> string ("  /* " ^ str ^ " */")
+    | I_label str -> string (str ^ ": ;")
+    | I_goto str -> string (Printf.sprintf "  goto %s;" str)
+    | I_raw _ when ctx.no_raw -> empty
+    | I_raw str -> string ("  " ^ str)
+    | I_end _ -> assert false
+    | I_exit _ -> string ("  sail_match_failure(\"" ^ String.escaped (string_of_id fid) ^ "\");")
 
-(* Convert Sail literals to Codal literals *)
-and codal_literal_of_value vl ctyp = match vl with
-  | VL_int n -> 
-      if Big_int.less_equal (Big_int.of_int (-9223372036854775808)) n &&
-         Big_int.less_equal n (Big_int.of_int 9223372036854775807) then
-        "INT64_C(" ^ Big_int.to_string n ^ ")"
-      else
-        "sail_int_of_string(\"" ^ Big_int.to_string n ^ "\")"
-  | VL_bool true -> "true"
-  | VL_bool false -> "false"
-  | VL_bit Sail2_values.B0 -> "false"
-  | VL_bit Sail2_values.B1 -> "true"
-  | VL_string s -> "\"" ^ String.escaped s ^ "\""
-  | VL_unit -> "/* unit */"
-  | VL_bits bits -> 
-      "sail_bits_of_string(\"" ^ 
-      String.concat "" (List.map (function 
-        | Sail2_values.B0 -> "0" 
-        | Sail2_values.B1 -> "1") bits) ^ "\")"
-  | VL_real s -> "sail_real_of_string(\"" ^ s ^ "\")"
-  | VL_enum s -> s
-  | VL_ref s -> "&" ^ s
-  | VL_undefined -> "UNDEFINED(" ^ codal_type_of_ctyp ctyp ^ ")"
 
-(* Convert Sail operations to Codal operations *)
-and codal_operation op cvals = match op with
-  | Iadd -> 
-      "sail_int_add(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Isub -> 
-      "sail_int_sub(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Itimes -> 
-      "sail_int_mul(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Idiv -> 
-      "sail_int_div(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Ilt -> 
-      "sail_int_lt(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Ilteq -> 
-      "sail_int_lteq(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Igt -> 
-      "sail_int_gt(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Igteq -> 
-      "sail_int_gteq(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Eq -> 
-      "sail_int_eq(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Neq -> 
-      "sail_int_neq(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Band -> 
-      "(" ^ String.concat " && " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bor -> 
-      "(" ^ String.concat " || " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bnot -> 
-      "!(" ^ codal_value_of_cval (List.hd cvals) ^ ")"
-  | Bvadd -> 
-      "sail_bits_add(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bvsub -> 
-      "sail_bits_sub(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bvand -> 
-      "sail_bits_and(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bvor -> 
-      "sail_bits_or(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bvxor -> 
-      "sail_bits_xor(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Bvnot -> 
-      "sail_bits_not(" ^ codal_value_of_cval (List.hd cvals) ^ ")"
-  | Bvaccess -> 
-      "sail_bits_access(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Concat -> 
-      "sail_bits_concat(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Zero_extend n -> 
-      "sail_bits_zero_extend(" ^ string_of_int n ^ ", " ^ 
-      codal_value_of_cval (List.hd cvals) ^ ")"
-  | Sign_extend n -> 
-      "sail_bits_sign_extend(" ^ string_of_int n ^ ", " ^ 
-      codal_value_of_cval (List.hd cvals) ^ ")"
-  | Slice n -> 
-      "sail_bits_slice(" ^ string_of_int n ^ ", " ^ 
-      String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Set_slice -> 
-      "sail_bits_set_slice(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | Replicate n -> 
-      "sail_bits_replicate(" ^ string_of_int n ^ ", " ^ 
-      codal_value_of_cval (List.hd cvals) ^ ")"
-  | Index n -> 
-      "sail_vector_access(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
-  | List_hd -> 
-      "sail_list_hd(" ^ codal_value_of_cval (List.hd cvals) ^ ")"
-  | List_tl -> 
-      "sail_list_tl(" ^ codal_value_of_cval (List.hd cvals) ^ ")"
-  | List_is_empty -> 
-      "sail_list_is_empty(" ^ codal_value_of_cval (List.hd cvals) ^ ")"
-  | Ite -> 
-      let [cond; then_val; else_val] = cvals in
-      "(" ^ codal_value_of_cval cond ^ " ? " ^ 
-      codal_value_of_cval then_val ^ " : " ^ 
-      codal_value_of_cval else_val ^ ")"
-  | Get_abstract -> 
-      "sail_abstract_get(" ^ codal_value_of_cval (List.hd cvals) ^ ")"
-  | String_eq -> 
-      "strcmp(" ^ String.concat ", " (List.map codal_value_of_cval cvals) ^ ") == 0"
-  | Unsigned n -> 
-      "sail_int_unsigned(" ^ string_of_int n ^ ", " ^ 
-      codal_value_of_cval (List.hd cvals) ^ ")"
-  | Signed n -> 
-      "sail_int_signed(" ^ string_of_int n ^ ", " ^ 
-      codal_value_of_cval (List.hd cvals) ^ ")"
-  | Sslice n -> 
-      "sail_bits_sslice(" ^ string_of_int n ^ ", " ^ 
-      String.concat ", " (List.map codal_value_of_cval cvals) ^ ")"
+(*1560
+-codegen_type_def 
+- generated
+-codegen_tup
+-codegen_list
+-codegen_vector   
+-is_decl
+-codegen_decl
+-codegen_alloc
+-codegen_def' 
+-c_gen_typ  
+-ctyp_dependencies (*2264 we need this*)
+-codegen_ctg (*2266 we need this*)
+-merge_file_docs
+2287*)
 
-(* Generate Codal instruction *)
-let rec codal_instr_of_instr ctx = function
-  | I_aux (I_decl (ctyp, id), l) -> 
-      codal_type_of_ctyp ctyp ^ " " ^ string_of_name id ^ ";\n"
-  | I_aux (I_init (ctyp, id, init), l) -> 
-      let decl = codal_type_of_ctyp ctyp ^ " " ^ string_of_name id in
-      let init_val = match init with
-        | Init_cval cval -> " = " ^ codal_value_of_cval cval
-        | Init_static vl -> " = " ^ codal_literal_of_value vl ctyp
-        | Init_json_key parts -> " = sail_json_key_new(" ^ 
-            String.concat ", " (List.map (fun s -> "\"" ^ s ^ "\"") parts) ^ ")"
-      in
-      decl ^ init_val ^ ";\n"
-  | I_aux (I_copy (clexp, cval), l) -> 
-      codal_clexp_of_clexp clexp ^ " = " ^ codal_value_of_cval cval ^ ";\n"
-  | I_aux (I_if (cval, then_instrs, else_instrs), l) -> 
-      "if (" ^ codal_value_of_cval cval ^ ") {\n" ^
-      String.concat "" (List.map (codal_instr_of_instr ctx) then_instrs) ^
-      "} else {\n" ^
-      String.concat "" (List.map (codal_instr_of_instr ctx) else_instrs) ^
-      "}\n"
-  | I_aux (I_block instrs, l) -> 
-      "{\n" ^ String.concat "" (List.map (codal_instr_of_instr ctx) instrs) ^ "}\n"
-  | I_aux (I_funcall (creturn, extern, (id, ctyps), cvals), l) -> 
-      let func_name = string_of_id id in
-      let args = String.concat ", " (List.map codal_value_of_cval cvals) in
-      match creturn with
-      | CR_one clexp -> 
-          codal_clexp_of_clexp clexp ^ " = " ^ func_name ^ "(" ^ args ^ ");\n"
-      | CR_multi clexps -> 
-          "sail_multi_return(" ^ func_name ^ ", " ^ args ^ ", " ^
-          String.concat ", " (List.map codal_clexp_of_clexp clexps) ^ ");\n"
-  | I_aux (I_return cval, l) -> 
-      "return " ^ codal_value_of_cval cval ^ ";\n"
-  | I_aux (I_clear (ctyp, id), l) -> 
-      "sail_clear(" ^ string_of_name id ^ ");\n"
-  | I_aux (I_reset (ctyp, id), l) -> 
-      "sail_reset(" ^ string_of_name id ^ ");\n"
-  | I_aux (I_reinit (ctyp, id, cval), l) -> 
-      string_of_name id ^ " = " ^ codal_value_of_cval cval ^ ";\n"
-  | I_aux (I_undefined ctyp, l) -> 
-      "return UNDEFINED(" ^ codal_type_of_ctyp ctyp ^ ");\n"
-  | I_aux (I_exit, l) -> 
-      "sail_match_failure(\"" ^ ctx.target_name ^ "\");\n"
-  | I_aux (I_comment str, l) -> 
-      "// " ^ str ^ "\n"
-  | I_aux (I_raw str, l) -> 
-      if ctx.no_raw then "" else str ^ "\n"
-  | I_aux (I_label str, l) -> 
-      str ^ ":\n"
-  | I_aux (I_goto str, l) -> 
-      "goto " ^ str ^ ";\n"
-  | I_aux (I_jump (cval, label), l) -> 
-      "if (" ^ codal_value_of_cval cval ^ ") goto " ^ label ^ ";\n"
-  | I_aux (I_throw cval, l) -> 
-      "sail_throw(" ^ codal_value_of_cval cval ^ ");\n"
-  | I_aux (I_try_block instrs, l) -> 
-      "try {\n" ^ String.concat "" (List.map (codal_instr_of_instr ctx) instrs) ^ "}\n"
-  | I_aux (I_end id, l) -> 
-      "// end " ^ string_of_name id ^ "\n"
-
-(* Convert Codal left expression *)
-and codal_clexp_of_clexp = function
-  | CL_id (id, ctyp) -> 
-      string_of_name id
-  | CL_rmw (read, write, ctyp) -> 
-      string_of_name write
-  | CL_field (clexp, id, ctyp) -> 
-      codal_clexp_of_clexp clexp ^ "." ^ string_of_id id
-  | CL_addr clexp -> 
-      "&(" ^ codal_clexp_of_clexp clexp ^ ")"
-  | CL_tuple (clexp, n) -> 
-      codal_clexp_of_clexp clexp ^ ".f" ^ string_of_int n
-  | CL_void ctyp -> 
-      "/* void */"
-
-(* Generate Codal function *)
-let codal_function_of_cdef ctx = function
-  | CDEF_aux (CDEF_fundef (id, heap_return, args, instrs), def_annot) -> 
-      let ret_type = match heap_return with
-        | Return_plain -> "void"
-        | Return_via name -> codal_type_of_ctyp (clexp_ctyp (CL_id (name, CT_unit)))
-      in
-      let param_list = String.concat ", " (List.map (fun (name, ctyp) -> 
-        codal_type_of_ctyp ctyp ^ " " ^ string_of_name name) args) in
-      let body = String.concat "" (List.map (codal_instr_of_instr ctx) instrs) in
-      ret_type ^ " " ^ string_of_id id ^ "(" ^ param_list ^ ") {\n" ^ body ^ "}\n\n"
-  | CDEF_aux (CDEF_register (id, ctyp, instrs), def_annot) -> 
-      "// Register " ^ string_of_id id ^ "\n" ^
-      codal_type_of_ctyp ctyp ^ " " ^ string_of_name id ^ ";\n" ^
-      String.concat "" (List.map (codal_instr_of_instr ctx) instrs) ^ "\n"
-  | CDEF_aux (CDEF_val (id, tyvars, ctyps, ctyp, extern), def_annot) -> 
-      let param_types = String.concat ", " (List.map codal_type_of_ctyp ctyps) in
-      let extern_str = match extern with
-        | Some extern_name -> " = " ^ extern_name
-        | None -> ""
-      in
-      codal_type_of_ctyp ctyp ^ " " ^ string_of_id id ^ 
-      "(" ^ param_types ^ ")" ^ extern_str ^ ";\n"
-  | CDEF_aux (CDEF_type ctype_def, def_annot) -> 
-      codal_type_def_of_ctype_def ctype_def
-  | CDEF_aux (CDEF_let (n, bindings, instrs), def_annot) -> 
-      "// Let binding " ^ string_of_int n ^ "\n" ^
-      String.concat "" (List.map (fun (id, ctyp) -> 
-        codal_type_of_ctyp ctyp ^ " " ^ string_of_id id ^ ";\n") bindings) ^
-      String.concat "" (List.map (codal_instr_of_instr ctx) instrs) ^ "\n"
-  | CDEF_aux (CDEF_startup (id, instrs), def_annot) -> 
-      "void " ^ string_of_id id ^ "_startup() {\n" ^
-      String.concat "" (List.map (codal_instr_of_instr ctx) instrs) ^ "}\n\n"
-  | CDEF_aux (CDEF_finish (id, instrs), def_annot) -> 
-      "void " ^ string_of_id id ^ "_finish() {\n" ^
-      String.concat "" (List.map (codal_instr_of_instr ctx) instrs) ^ "}\n\n"
-  | CDEF_aux (CDEF_pragma (name, str), def_annot) -> 
-      "// #pragma " ^ name ^ " " ^ str ^ "\n"
-
-(* Generate Codal type definition *)
-and codal_type_def_of_ctype_def = function
-  | CTD_aux (CTD_enum (id, members), def_annot) -> 
-      "enum " ^ string_of_id id ^ " {\n" ^
-      String.concat ",\n" (List.map string_of_id members) ^ "\n};\n\n"
-  | CTD_aux (CTD_struct (id, tyvars, fields), def_annot) -> 
-      "struct " ^ string_of_id id ^ " {\n" ^
-      String.concat "" (List.map (fun (id, ctyp) -> 
-        "  " ^ codal_type_of_ctyp ctyp ^ " " ^ string_of_id id ^ ";\n") fields) ^
-      "};\n\n"
-  | CTD_aux (CTD_variant (id, tyvars, ctors), def_annot) -> 
-      "union " ^ string_of_id id ^ " {\n" ^
-      String.concat "" (List.map (fun (id, ctyp) -> 
-        "  " ^ codal_type_of_ctyp ctyp ^ " " ^ string_of_id id ^ "_value;\n") ctors) ^
-      "};\n\n"
-  | CTD_aux (CTD_abbrev (id, ctyp), def_annot) -> 
-      "typedef " ^ codal_type_of_ctyp ctyp ^ " " ^ string_of_id id ^ ";\n\n"
-  | CTD_aux (CTD_abstract (id, ctyp, init), def_annot) -> 
-      "typedef " ^ codal_type_of_ctyp ctyp ^ " " ^ string_of_id id ^ ";\n\n"
-
-let rec ctyp_dependencies = function(*2264 we need this*)
-let codegen_ctg ctx = function (*2266 we need this*)
 let codegen_def ctx def=  (*2291*)(*It converts one jib definition to list of Document.t values*)
     let ctyps = cdef_ctyps def |> CTSet.elements in
     (*cdef_ctyps is a function that returns a set of ctyps for a given jib definition*)
@@ -388,12 +454,16 @@ Also when we turn compile_ast do we use AST or anf
   
     )
 
+(*2306
+-is_cdef_startup
+-sgen_startup
+-sgen_instr 
+-is_cdef_finish
+-sgen_finish
+-get_recursive_functions
+2325*)
 
 
-module C_config (Opts : sig
-(*We need module C_config type conding*)
-(*Its main job is to define how 
-Sail types map to C types in the JIB compiler backend.*)
 (*Does this embed Ctype into AST while creating Jib?*)
 let jib_of_ast env effect_info ast =
     let module Jibc = Make (C_config (struct
@@ -404,6 +474,13 @@ let jib_of_ast env effect_info ast =
     let ctx = initial_ctx env effect_info in
     Jibc.compile_ast ctx ast      
 
+(*2336
+-c_ast_registers
+-get_unit_tests
+2351*)
+
+
+(*2353**)
 let compile_ast env effet_info basename ast =
 try
     (*Returns header: string option and impl: string*)
@@ -517,37 +594,4 @@ let model_main =
       )
   )
         
-
-(* Main Codal emission function 
-let emit_codal (ast : Type_check.typed_ast) filename =
-  let ctx = init_codal_ctx "codal" ast in
-  
-  (* Compile to Jib IR *)
-  let jib_ast = compile_ast ctx ast in
-  
-  (* Generate Codal code *)
-  let codal_code = 
-    "// Codal backend output\n" ^
-    "// Generated from Sail AST\n\n" ^
-    "#include <stdint.h>\n" ^
-    "#include <stdbool.h>\n" ^
-    "#include <string.h>\n" ^
-    "#include \"sail.h\"\n\n" ^
-    String.concat "" (List.map (codal_function_of_cdef ctx) jib_ast)
-  in
-  
-  (* Write to file *)
-  let oc = open_out filename in
-  output_string oc codal_code;
-  close_out oc
-
-(* Codal target registration *)
-let codal_target = {
-  Target.name = "codal";
-  Target.options = codal_options;
-  Target.rewrites = codal_rewrites;
-  Target.supports_abstract_types = true;
-  Target.supports_runtime_config = true;
-  Target.emit = emit_codal;
-} 
-end  
+        end
