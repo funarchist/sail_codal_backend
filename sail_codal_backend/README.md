@@ -1,23 +1,5 @@
 # Sail Codal Backend
 
-One should add follows
-
-(package
-  (name sail_codal_backend)
-  (synopsis "Sail to Codal translation")
-  (depends
-    (libsail (= :version))))
-
-and inside depends part
-    (sail_codal_backend (and (= :version) :post))
-
-to dune-project inside sail repo
-
-and add sail_codal_backend.opam
-
-
-
-
 This backend transforms Sail code to Codal-compatible C code, with the key feature of converting Sail's `int` type to `sail_int`.
 
 ## Features
